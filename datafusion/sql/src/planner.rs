@@ -277,7 +277,10 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                         Ok(())
                     }
                     None => {
-                        if !schema.fields_with_unqualified_name(&col.name).is_empty() {
+                        if !schema
+                            .fields_with_unqualified_name(&col.name, col.ignore_case)
+                            .is_empty()
+                        {
                             Ok(())
                         } else {
                             Err(unqualified_field_not_found(col.name.as_str(), schema))

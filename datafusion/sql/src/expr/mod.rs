@@ -144,6 +144,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                         Some(df_field) => Expr::Column(Column {
                             relation: df_field.qualifier().cloned(),
                             name: df_field.name().clone(),
+                            ignore_case: false,
                         }),
                         None => Expr::Column(col),
                     }

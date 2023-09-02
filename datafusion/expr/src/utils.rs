@@ -349,7 +349,7 @@ fn get_excluded_columns(
         let field = if let Some(qualifier) = qualifier {
             schema.field_with_qualified_name(qualifier, col_name)?
         } else {
-            schema.field_with_unqualified_name(col_name)?
+            schema.field_with_unqualified_name(col_name, false)?
         };
         result.push(field.qualified_column())
     }
@@ -1140,7 +1140,7 @@ pub fn columnize_expr(e: Expr, input_schema: &DFSchema) -> Expr {
         )),
         Expr::ScalarSubquery(_) => e.clone(),
         _ => match e.display_name() {
-            Ok(name) => match input_schema.field_with_unqualified_name(&name) {
+            Ok(name) => match input_schema.field_with_unqualified_name(&name, false) {
                 Ok(field) => Expr::Column(field.qualified_column()),
                 // expression not provided as input, do not convert to a column reference
                 Err(_) => e,

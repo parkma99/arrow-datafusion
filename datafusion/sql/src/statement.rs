@@ -926,7 +926,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                     DataFusionError::Plan("Empty column id".to_string())
                 })?;
                 // Validate that the assignment target column exists
-                table_schema.field_with_unqualified_name(&col_name.value)?;
+                table_schema.field_with_unqualified_name(&col_name.value, false)?;
                 Ok((col_name.value.clone(), assign.value.clone()))
             })
             .collect::<Result<HashMap<String, Expr>>>()?;

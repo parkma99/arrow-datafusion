@@ -1172,6 +1172,7 @@ pub fn project_with_column_index(
             Expr::Column(Column {
                 relation: _,
                 ref name,
+                ignore_case: _,
             }) if name != schema.field(i).name() => e.alias(schema.field(i).name()),
             Expr::Alias { .. } | Expr::Column { .. } => e,
             _ => e.alias(schema.field(i).name()),
@@ -1775,6 +1776,7 @@ mod tests {
                     Column {
                         relation: Some(OwnedTableReference::Bare { table }),
                         name,
+                        ignore_case: _,
                     },
             })) => {
                 assert_eq!("employee_csv", table);
@@ -1802,6 +1804,7 @@ mod tests {
                     Column {
                         relation: Some(OwnedTableReference::Bare { table }),
                         name,
+                        ignore_case: _,
                     },
             })) => {
                 assert_eq!("employee_csv", table);

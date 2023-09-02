@@ -704,6 +704,7 @@ pub async fn from_substrait_rex(
                         Ok(Arc::new(Expr::Column(Column {
                             relation: column.relation,
                             name: column.name,
+                            ignore_case: column.ignore_case,
                         })))
                     }
                 },

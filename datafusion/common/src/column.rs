@@ -32,6 +32,8 @@ pub struct Column {
     pub relation: Option<OwnedTableReference>,
     /// field/column name.
     pub name: String,
+    /// ignore case
+    pub ignore_case: bool,
 }
 
 impl Column {
@@ -48,6 +50,7 @@ impl Column {
         Self {
             relation: relation.map(|r| r.into()),
             name: name.into(),
+            ignore_case: false,
         }
     }
 
@@ -56,6 +59,7 @@ impl Column {
         Self {
             relation: None,
             name: name.into(),
+            ignore_case: false,
         }
     }
 
@@ -64,6 +68,7 @@ impl Column {
         Self {
             relation: None,
             name: name.into(),
+            ignore_case: false,
         }
     }
 
@@ -95,7 +100,11 @@ impl Column {
             // identifiers will be treated as an unqualified column name
             _ => return None,
         };
-        Some(Self { relation, name })
+        Some(Self {
+            relation,
+            name,
+            ignore_case: false,
+        })
     }
 
     /// Deserialize a fully qualified name string into a column
@@ -109,6 +118,7 @@ impl Column {
             .unwrap_or_else(|| Self {
                 relation: None,
                 name: flat_name.to_owned(),
+                ignore_case: false,
             })
     }
 
@@ -119,6 +129,7 @@ impl Column {
             .unwrap_or_else(|| Self {
                 relation: None,
                 name: flat_name.to_owned(),
+                ignore_case: false,
             })
     }
 
@@ -177,7 +188,8 @@ impl Column {
         }
 
         for schema in schemas {
-            let fields = schema.fields_with_unqualified_name(&self.name);
+            let fields =
+                schema.fields_with_unqualified_name(&self.name, self.ignore_case);
             match fields.len() {
                 0 => continue,
                 1 => {
@@ -268,7 +280,9 @@ impl Column {
         for schema_level in schemas {
             let fields = schema_level
                 .iter()
-                .flat_map(|s| s.fields_with_unqualified_name(&self.name))
+                .flat_map(|s| {
+                    s.fields_with_unqualified_name(&self.name, self.ignore_case)
+                })
                 .collect::<Vec<_>>();
             match fields.len() {
                 0 => continue,

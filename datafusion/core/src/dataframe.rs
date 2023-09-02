@@ -142,7 +142,7 @@ impl DataFrame {
     pub fn select_columns(self, columns: &[&str]) -> Result<DataFrame> {
         let fields = columns
             .iter()
-            .map(|name| self.plan.schema().field_with_unqualified_name(name))
+            .map(|name| self.plan.schema().field_with_unqualified_name(name, false))
             .collect::<Result<Vec<_>>>()?;
         let expr: Vec<Expr> = fields
             .iter()
@@ -1078,6 +1078,7 @@ impl DataFrame {
                     Expr::Column(Column {
                         relation: None,
                         name: f.name().into(),
+                        ignore_case: false,
                     })
                 }
             })

@@ -46,20 +46,26 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             // interpret names with '.' as if they were
             // compound identifiers, but this is not a compound
             // identifier. (e.g. it is "foo.bar" not foo.bar)
+            let ignore_case: bool = id.quote_style.is_none();
             let normalize_ident = self.normalizer.normalize(id);
-            match schema.field_with_unqualified_name(normalize_ident.as_str()) {
+            match schema
+                .field_with_unqualified_name(normalize_ident.as_str(), ignore_case)
+            {
                 Ok(_) => {
                     // found a match without a qualified name, this is a inner table column
                     Ok(Expr::Column(Column {
                         relation: None,
                         name: normalize_ident,
+                        ignore_case,
                     }))
                 }
                 Err(_) => {
                     // check the outer_query_schema and try to find a match
                     if let Some(outer) = planner_context.outer_query_schema() {
-                        match outer.field_with_unqualified_name(normalize_ident.as_str())
-                        {
+                        match outer.field_with_unqualified_name(
+                            normalize_ident.as_str(),
+                            ignore_case,
+                        ) {
                             Ok(field) => {
                                 // found an exact match on a qualified name in the outer plan schema, so this is an outer reference column
                                 Ok(Expr::OuterReferenceColumn(
@@ -70,12 +76,14 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                             Err(_) => Ok(Expr::Column(Column {
                                 relation: None,
                                 name: normalize_ident,
+                                ignore_case,
                             })),
                         }
                     } else {
                         Ok(Expr::Column(Column {
                             relation: None,
                             name: normalize_ident,
+                            ignore_case,
                         }))
                     }
                 }

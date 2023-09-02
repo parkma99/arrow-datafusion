@@ -128,6 +128,7 @@ pub fn unnormalize_col(expr: Expr) -> Expr {
                 let col = Column {
                     relation: None,
                     name: c.name,
+                    ignore_case: c.ignore_case,
                 };
                 Transformed::Yes(Expr::Column(col))
             } else {
@@ -145,9 +146,11 @@ pub fn create_col_from_scalar_expr(
 ) -> Result<Column> {
     match scalar_expr {
         Expr::Alias(Alias { name, .. }) => Ok(Column::new(Some(subqry_alias), name)),
-        Expr::Column(Column { relation: _, name }) => {
-            Ok(Column::new(Some(subqry_alias), name))
-        }
+        Expr::Column(Column {
+            relation: _,
+            name,
+            ignore_case: _,
+        }) => Ok(Column::new(Some(subqry_alias), name)),
         _ => {
             let scalar_column = scalar_expr.display_name()?;
             Ok(Column::new(Some(subqry_alias), scalar_column))

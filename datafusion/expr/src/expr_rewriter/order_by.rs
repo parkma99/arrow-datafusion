@@ -113,6 +113,7 @@ fn rewrite_in_terms_of_projection(
         let search_col = Expr::Column(Column {
             relation: None,
             name,
+            ignore_case: false,
         });
 
         // look for the column named the same as this expr

@@ -97,6 +97,7 @@ impl DFSchema {
                         field: Column {
                             relation: Some((*qualifier).clone()),
                             name: name.to_string(),
+                            ignore_case: false,
                         },
                     },
                 ));
@@ -155,7 +156,9 @@ impl DFSchema {
             let duplicated_field = match field.qualifier() {
                 Some(q) => self.field_with_name(Some(q), field.name()).is_ok(),
                 // for unqualified columns, check as unqualified name
-                None => self.field_with_unqualified_name(field.name()).is_ok(),
+                None => self
+                    .field_with_unqualified_name(field.name(), false)
+                    .is_ok(),
             };
             if !duplicated_field {
                 self.fields.push(field.clone());
@@ -226,6 +229,7 @@ impl DFSchema {
                         Column {
                             relation: Some(r),
                             name: column_name,
+                            ignore_case: _,
                         } => &r == qq && column_name == name,
                         _ => false,
                     }
@@ -258,7 +262,7 @@ impl DFSchema {
         if let Some(qualifier) = qualifier {
             self.field_with_qualified_name(qualifier, name)
         } else {
-            self.field_with_unqualified_name(name)
+            self.field_with_unqualified_name(name, false)
         }
     }
 
@@ -271,16 +275,30 @@ impl DFSchema {
     }
 
     /// Find all fields match the given name
-    pub fn fields_with_unqualified_name(&self, name: &str) -> Vec<&DFField> {
+    pub fn fields_with_unqualified_name(
+        &self,
+        name: &str,
+        ignore_case: bool,
+    ) -> Vec<&DFField> {
         self.fields
             .iter()
-            .filter(|field| field.name() == name)
+            .filter(|field| {
+                if ignore_case {
+                    field.name().to_ascii_lowercase() == name
+                } else {
+                    field.name() == name
+                }
+            })
             .collect()
     }
 
     /// Find the field with the given name
-    pub fn field_with_unqualified_name(&self, name: &str) -> Result<&DFField> {
-        let matches = self.fields_with_unqualified_name(name);
+    pub fn field_with_unqualified_name(
+        &self,
+        name: &str,
+        ignore_case: bool,
+    ) -> Result<&DFField> {
+        let matches = self.fields_with_unqualified_name(name, ignore_case);
         match matches.len() {
             0 => Err(unqualified_field_not_found(name, self)),
             1 => Ok(matches[0]),
@@ -304,6 +322,7 @@ impl DFSchema {
                             field: Column {
                                 relation: None,
                                 name: name.to_string(),
+                                ignore_case: false,
                             },
                         },
                     ))
@@ -329,7 +348,7 @@ impl DFSchema {
     pub fn field_from_column(&self, column: &Column) -> Result<&DFField> {
         match &column.relation {
             Some(r) => self.field_with_qualified_name(r, &column.name),
-            None => self.field_with_unqualified_name(&column.name),
+            None => self.field_with_unqualified_name(&column.name, false),
         }
     }
 
@@ -713,6 +732,7 @@ impl DFField {
         Column {
             relation: self.qualifier.clone(),
             name: self.field.name().to_string(),
+            ignore_case: false,
         }
     }
 
@@ -721,6 +741,7 @@ impl DFField {
         Column {
             relation: None,
             name: self.field.name().to_string(),
+            ignore_case: false,
         }
     }
 
@@ -895,9 +916,9 @@ mod tests {
             .field_with_qualified_name(&TableReference::bare("t2"), "c0")
             .is_ok());
         // test invalid access
-        assert!(join.field_with_unqualified_name("c0").is_err());
-        assert!(join.field_with_unqualified_name("t1.c0").is_err());
-        assert!(join.field_with_unqualified_name("t2.c0").is_err());
+        assert!(join.field_with_unqualified_name("c0", false).is_err());
+        assert!(join.field_with_unqualified_name("t1.c0", false).is_err());
+        assert!(join.field_with_unqualified_name("t2.c0", false).is_err());
         Ok(())
     }
 
@@ -935,12 +956,12 @@ mod tests {
         assert!(join
             .field_with_qualified_name(&TableReference::bare("t1"), "c0")
             .is_ok());
-        assert!(join.field_with_unqualified_name("c0").is_ok());
-        assert!(join.field_with_unqualified_name("c100").is_ok());
+        assert!(join.field_with_unqualified_name("c0", false).is_ok());
+        assert!(join.field_with_unqualified_name("c100", false).is_ok());
         assert!(join.field_with_name(None, "c100").is_ok());
         // test invalid access
-        assert!(join.field_with_unqualified_name("t1.c0").is_err());
-        assert!(join.field_with_unqualified_name("t1.c100").is_err());
+        assert!(join.field_with_unqualified_name("t1.c0", false).is_err());
+        assert!(join.field_with_unqualified_name("t1.c100", false).is_err());
         assert!(join
             .field_with_qualified_name(&TableReference::bare(""), "c100")
             .is_err());
@@ -974,7 +995,7 @@ mod tests {
         );
         assert_contains!(
             schema
-                .field_with_unqualified_name("y")
+                .field_with_unqualified_name("y", false)
                 .unwrap_err()
                 .to_string(),
             expected_help
